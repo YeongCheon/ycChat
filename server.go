@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"chatting/protocol"
 	"fmt"
 	"net"
 )
@@ -14,17 +15,42 @@ func main() {
 
 	for {
 		conn, _ := listener.Accept()
-		fmt.Println("welcome")
-		reader := bufio.NewReader(conn)
-		go func(reader *bufio.Reader) {
+
+		userReader := bufio.NewReader(conn)
+
+		go func(reader *bufio.Reader) { //user join
+			fmt.Println("welcome")
 			for {
-				message, err := reader.ReadString('\n')
-				if err != nil {
-					fmt.Println(err)
+				var values []byte
+				buf := make([]byte, 10)
+				for {
+					size, err := reader.Read(buf)
+
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+
+					values = append(values, buf...)
+
+					if size < len(buf) {
+						fmt.Println("read complete")
+						break
+					}
+
 				}
-				fmt.Println(message)
-			}
-		}(reader)
+
+				packet := protocol.Protocol{}
+				packet.Decode(values)
+
+				fmt.Println(packet.Action)
+				fmt.Println(packet.Content)
+				fmt.Println(packet.UserId)
+				fmt.Println(packet.ContentSize)
+				fmt.Println(packet.Content)
+
+			} //end for
+		}(userReader)
 
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"chatting/protocol"
 	"fmt"
 	"net"
 	"time"
@@ -15,12 +16,22 @@ func main() {
 	}
 	defer conn.Close()
 
+	var i uint8 = 11
+
 	for {
+		protocol := protocol.Protocol{
+			Action:      i,
+			UserIdSize:  4,
+			UserId:      "test",
+			ContentSize: 5,
+			Content:     "hello",
+		}
+
 		writer := bufio.NewWriter(conn)
-		writer.WriteString("hello")
-		writer.WriteRune('\n')
+		writer.Write(protocol.Encode())
 		writer.Flush()
-		fmt.Println("Done")
-		time.Sleep(1000 * time.Millisecond)
+
+		time.Sleep(2000 * time.Millisecond)
+		i++
 	}
 }
