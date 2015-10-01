@@ -20,7 +20,7 @@ func main() {
 
 	for {
 		protocol := protocol.Protocol{
-			Action:      i,
+			Action:      1,
 			UserIdSize:  4,
 			UserId:      "test",
 			ContentSize: 5,
