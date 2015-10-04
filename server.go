@@ -5,32 +5,39 @@ import (
 	"chatting/protocol"
 	"fmt"
 	"net"
-	"strconv"
 )
 
 type Client struct {
-	incoming chan protocol.Protocol
-	outgoing chan protocol.Protocol
-	reader   *bufio.Reader
-	writer   *bufio.Writer
+	Incoming chan protocol.Protocol
+	Outgoing chan protocol.Protocol
+	Reader   *bufio.Reader
+	Writer   *bufio.Writer
 }
 
 type Room struct {
-	id      uint64
-	clients []*Client
+	Id      uint64
+	Clients []*Client
 }
 
 func (room *Room) addClient(client *Client) {
-	room.clients = append(room.clients, client)
+	room.Clients = append(room.Clients, client)
+}
+
+func (room *Room) Broadcast(packet protocol.Protocol) {
+	for _, client := range room.Clients {
+		client.Writer.Write(packet.Encode())
+		client.Writer.Flush()
+	}
+	n
 }
 
 type Rooms struct {
-	roomList []*Room
+	RoomList []*Room
 }
 
 func (rooms *Rooms) FindRoom(findId uint64) bool {
-	for _, room := range rooms.roomList {
-		if room.id == findId {
+	for _, room := range rooms.RoomList {
+		if room.Id == findId {
 			return true
 		}
 	}
@@ -40,15 +47,15 @@ func (rooms *Rooms) FindRoom(findId uint64) bool {
 
 func (rooms *Rooms) CreateRoom(roomNumber uint64) {
 	room := Room{
-		id: roomNumber,
+		Id: roomNumber,
 	}
 
-	rooms.roomList = append(rooms.roomList, &room)
+	rooms.RoomList = append(rooms.RoomList, &room)
 }
 
 func (rooms *Rooms) getRoom(roomNumber uint64) *Room {
-	for _, room := range rooms.roomList {
-		if room.id == roomNumber {
+	for _, room := range rooms.RoomList {
+		if room.Id == roomNumber {
 			fmt.Println("getRoom", room)
 			return room
 		}
@@ -65,7 +72,7 @@ func (rooms *Rooms) JoinRoom(roomNumber uint64, client *Client) bool {
 	}
 
 	room.addClient(client)
-	fmt.Println("roomMember", room.clients)
+	fmt.Println("roomMember", room.Clients)
 	return true
 }
 
@@ -85,9 +92,12 @@ func main() {
 	for {
 		conn, _ := listener.Accept()
 
-		userReader := bufio.NewReader(conn)
+		go func(conn net.Conn) { //user join
+			reader := bufio.NewReader(conn)
 
-		go func(reader *bufio.Reader) { //user join
+			client := Client{
+				Writer: bufio.NewWriter(conn),
+			}
 			for {
 				var values []byte
 				buf := make([]byte, 10)
@@ -111,19 +121,22 @@ func main() {
 
 				switch packet.Action {
 				case 1: //join room
-					if roomNumber, _ := strconv.ParseUint(packet.Content, 10, 32); rooms.FindRoom(roomNumber) {
-						rooms.JoinRoom(roomNumber, &Client{})
+					if roomNumber := packet.RoomNumber; rooms.FindRoom(roomNumber) {
+						rooms.JoinRoom(roomNumber, &client)
 					} else {
 						rooms.CreateRoom(roomNumber)
-						rooms.JoinRoom(roomNumber, &Client{})
+						rooms.JoinRoom(roomNumber, &client)
 					}
 				case 2: //leave room
 					fmt.Println("leave room")
-				case 3: //send message
-					fmt.Println("send message")
+				case 3: //broadcast
+					fmt.Println("broadcast")
+					room := rooms.getRoom(packet.RoomNumber)
+
+					go room.Broadcast(packet)
 				}
 			} //end for
-		}(userReader)
+		}(conn)
 
 	}
 }

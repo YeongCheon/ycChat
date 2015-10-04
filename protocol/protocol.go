@@ -6,6 +6,7 @@ import (
 
 type Protocol struct {
 	Action      uint8
+	RoomNumber  uint64
 	UserIdSize  uint8
 	UserId      string
 	ContentSize uint
@@ -14,6 +15,7 @@ type Protocol struct {
 
 func (protocol *Protocol) Encode() (result []byte) {
 	result = append(result, protocol.Action)
+	result = append(result, byte(protocol.RoomNumber))
 	result = append(result, protocol.UserIdSize)
 	result = append(result, byte(protocol.ContentSize))
 	result = append(result, []byte(protocol.UserId)...)
@@ -29,9 +31,10 @@ func (protocol *Protocol) Decode(values []byte) {
 	}()
 
 	protocol.Action = values[0]
-	protocol.UserIdSize = values[1]
-	protocol.ContentSize = uint(values[2])
-	protocol.UserId = string(values[3 : 3+protocol.UserIdSize])
-	protocol.Content = string(values[3+uint(protocol.UserIdSize) : 3+uint(protocol.UserIdSize)+protocol.ContentSize+1])
+	protocol.RoomNumber = uint64(values[1])
+	protocol.UserIdSize = values[2]
+	protocol.ContentSize = uint(values[3])
+	protocol.UserId = string(values[4 : 4+protocol.UserIdSize])
+	protocol.Content = string(values[5+uint(protocol.UserIdSize) : 5+uint(protocol.UserIdSize)+protocol.ContentSize+1])
 
 }

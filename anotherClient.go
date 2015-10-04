@@ -65,7 +65,7 @@ func main() {
 			UserIdSize:  4,
 			UserId:      "test",
 			ContentSize: 5,
-			Content:     "hello",
+			Content:     "prince",
 		}
 
 		writer.Write(protocol.Encode())
