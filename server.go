@@ -28,7 +28,6 @@ func (room *Room) Broadcast(packet protocol.Protocol) {
 		client.Writer.Write(packet.Encode())
 		client.Writer.Flush()
 	}
-	n
 }
 
 type Rooms struct {

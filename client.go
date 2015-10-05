@@ -5,18 +5,24 @@ import (
 	"chatting/protocol"
 	"fmt"
 	"net"
-	"time"
+	"os"
 )
 
 func main() {
-	conn, err := net.Dial("tcp", "127.0.0.1:6666")
+	const serverIP string = "211.208.161.151:6666"
+	conn, err := net.Dial("tcp", serverIP)
 
 	if err != nil {
 		fmt.Println(err)
 	}
 	defer conn.Close()
 
-	var i uint8 = 11
+	fmt.Println("connected")
+
+	consoleReader := bufio.NewReader(os.Stdin)
+	fmt.Print("tell me your nicname : ")
+	nicname, _ := consoleReader.ReadString('\n')
+	nicnameSize := uint32(len(nicname))
 
 	go func() {
 		reader := bufio.NewReader(conn)
@@ -48,10 +54,9 @@ func main() {
 	joinProtocol := protocol.Protocol{
 		Action:      1,
 		RoomNumber:  1,
-		UserIdSize:  4,
-		UserId:      "test",
-		ContentSize: 4,
-		Content:     "join",
+		UserIdSize:  nicnameSize,
+		UserId:      nicname,
+		ContentSize: 0,
 	}
 
 	writer := bufio.NewWriter(conn)
@@ -59,19 +64,18 @@ func main() {
 	writer.Flush()
 
 	for {
+		message, _ := consoleReader.ReadString('\n')
+		messageSize := uint(len(message))
 		protocol := protocol.Protocol{
 			Action:      3,
 			RoomNumber:  1,
-			UserIdSize:  4,
-			UserId:      "test",
-			ContentSize: 5,
-			Content:     "hello",
+			UserIdSize:  nicnameSize,
+			UserId:      nicname,
+			ContentSize: messageSize,
+			Content:     message,
 		}
 
 		writer.Write(protocol.Encode())
 		writer.Flush()
-
-		time.Sleep(2000 * time.Millisecond)
-		i++
 	}
 }
